@@ -1,12 +1,13 @@
-"""Platform to control a Zehnder ComfoAir Q350/450/600 ventilation unit."""
+"""Platform to control a IZZI ERV 300 ventilation unit."""
 
 import logging
 from homeassistant.helpers.dispatcher import *
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
-    DEVICE_CLASS_TEMPERATURE,
-    DEVICE_CLASS_PRESSURE,
-    TEMP_CELSIUS
+    UnitOfTemperature,
+)
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
@@ -28,40 +29,40 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     sensors = [
         [
             "iZZi Exhaust Temperature",
-            TEMP_CELSIUS,
+            UnitOfTemperature.CELSIUS,
             IZZY_SENSOR_TEMPERATURE_EXHAUST_ID,
-            DEVICE_CLASS_TEMPERATURE,
+            SensorDeviceClass.TEMPERATURE,
             None,
             None
         ],
         [
             "iZZi Outdoor Temperature",
-            TEMP_CELSIUS,
+            UnitOfTemperature.CELSIUS,
             IZZY_SENSOR_TEMPERATURE_OUTDOOR_ID,
-            DEVICE_CLASS_TEMPERATURE,
+            SensorDeviceClass.TEMPERATURE,
             None,
             None
         ],
         [
             "iZZi Supply Temperature",
-            TEMP_CELSIUS,
+            UnitOfTemperature.CELSIUS,
             IZZY_SENSOR_TEMPERATURE_SUPPLY_ID,
-            DEVICE_CLASS_TEMPERATURE,
+            SensorDeviceClass.TEMPERATURE,
             None,
             None
         ],
         [
             "iZZi Extract Temperature",
-            TEMP_CELSIUS,
+            UnitOfTemperature.CELSIUS,
             IZZY_SENSOR_TEMPERATURE_EXTRACT_ID,
-            DEVICE_CLASS_TEMPERATURE,
+            SensorDeviceClass.TEMPERATURE,
             None,
             None
         ],
         ["iZZi Supply Fan Speed", "%", IZZY_SENSOR_FAN_SUPPLY_SPEED_ID, None, "mdi:fan", None],
         ["iZZi Extract Fan Speed", "%", IZZY_SENSOR_FAN_EXTRACT_SPEED_ID, None, "mdi:fan", None],
         ["iZZi Bypass mode", "", IZZY_SENSOR_BYPASS_MODE_ID, None, None, bypass_mapping],
-        ["iZZi Bypass temp", TEMP_CELSIUS, IZZY_SENSOR_BYPASS_TEMP_ID, None, "mdi:home-temperature", None],
+        ["iZZi Bypass temp", UnitOfTemperature.CELSIUS, IZZY_SENSOR_BYPASS_TEMP_ID, None, "mdi:home-temperature", None],
         ["iZZi Vent mode", "", IZZY_SENSOR_VENT_MODE_ID, None, None, vent_mode_mapping],
         ["iZZi Efficiency", "%", IZZY_SENSOR_EFFICIENCY_ID, None, None, None],
         ["iZZi Extract correction", "%", IZZY_SENSOR_EXTRACT_CORRECTION_STATE_ID, None, None, None],

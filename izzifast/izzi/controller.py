@@ -624,7 +624,7 @@ class IzziController(object):
                     else:
                         exp_sensor_val = sensor_data[0]
                     
-                    if self._cmd_data[IZZY_SENSOR_UNIT_STATE_ID][0] == IZZY_CMD_UNIT_STATE_ON:
+                    if self._cmd_data[IZZY_SENSOR_UNIT_STATE_ID][0] == IZZY_CMD_UNIT_STATE_ON and self._sensors_data[IZZY_SENSOR_COVER_STATE_ID][0] == 0:
                         if sensor_id == IZZY_SENSOR_FAN_SUPPLY_SPEED_ID:
                             exp_sensor_val = self.cf_controller.get_supply_speed(exp_sensor_val)
                             if exp_sensor_val < 15:

@@ -318,6 +318,6 @@ class IzzifastBridge:
     def sensor_callback(self, var, value):
         """Notify listeners that we have received an update."""
         _LOGGER.debug("Received update for %s: %s", var, value)
-        async_dispatcher_send(
+        dispatcher_send(
             self.hass, SIGNAL_IZZIFAST_UPDATE_RECEIVED.format(var), value
         )

@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 from homeassistant.components.fan import (
-    SUPPORT_SET_SPEED,
+    FanEntityFeature,
     FanEntity,
 )
 
@@ -76,7 +76,7 @@ class IzzifastFan(FanEntity):
     @property
     def supported_features(self) -> int:
         """Flag supported features."""
-        return SUPPORT_SET_SPEED
+        return FanEntityFeature.SET_SPEED
 
     @property
     def is_on(self) -> bool:
