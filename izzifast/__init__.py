@@ -29,7 +29,7 @@ DOMAIN = "izzifast"
 
 SIGNAL_IZZIFAST_UPDATE_RECEIVED = "izzifast_update_received_{}"
 
-DEFAULT_NAME = "iZZi ERV 300"
+DEFAULT_NAME = "iZZi ERV 302"
 DEFAULT_PORT = 8234
 DEFAULT_CORRECTION = 0.0
 DEFAULT_BYPASS_TEMP = 23
@@ -44,6 +44,7 @@ CONF_MODE_SLAVE = "slave"
 
 bypass_mode_list = ["auto", "open", "closed"]
 vent_mode_list = ["none", "fireplace", "open windows", "cooker hood"]
+vent_preset_mode_list = ["off", "Speed-1", "Speed-2", "Speed-3", "Ventilate", "Fireplace", "Away", "Auto"]
 
 DEVICE = None
 
@@ -82,6 +83,7 @@ BYPASS_DEFAULT_NAME = "auto"
 TEMP_DEFAULT_VAL = 23
 CORRECTION_DEFAULT_VAL = 0
 VENT_DEFAULT_NAME = "none"
+VENT_PRESET_DEFAULT_NAME = "Speed-1"
 
 ATTR_SUPPLY_NAME = "supply"
 ATTR_EXTRACT_NAME = "extract"
@@ -203,6 +205,15 @@ def setup(hass, config):
                 _LOGGER.error("Vent mode invalid to %s", mode)
         except Exception:
             _LOGGER.error("Vent mode failed %s", mode)
+
+    def handle_set_vent_preset_mode(call):
+        """Handle the service call."""
+        try:
+            mode = call.data.get(ATTR_MODE_NAME, VENT_PRESET_DEFAULT_NAME)
+            if izzibridge.set_vent_preset_mode(vent_preset_mode_list.index(mode)) != True:
+                _LOGGER.error("Vent mode invalid to %s", mode)
+        except Exception:
+            _LOGGER.error("Vent mode failed %s", mode)            
     
     def handle_set_speed_raw(call):
         """Handle the service call."""
@@ -221,7 +232,8 @@ def setup(hass, config):
         hass.services.register(DOMAIN, "bypass_mode", handle_set_bypass_mode)
         hass.services.register(DOMAIN, "bypass_temp", handle_set_bypass_temp)
         hass.services.register(DOMAIN, "correction", handle_set_correction)
-        hass.services.register(DOMAIN, "vent_mode", handle_set_vent_mode)
+        hass.services.register(DOMAIN, "vent_custom_mode", handle_set_vent_mode)
+        hass.services.register(DOMAIN, "vent_preset_mode", handle_set_vent_preset_mode)
         hass.services.register(DOMAIN, "speed_raw", handle_set_speed_raw)
         hass.services.register(DOMAIN, "cf_params", handle_set_cf_params)
         # Load platforms
@@ -241,7 +253,7 @@ class IzzifastBridge:
         self.data = {}
         self.name = name
         self.hass = hass
-        self.unique_id = "_iZZi_300_ERV_FE"
+        self.unique_id = "_iZZi_302_ERV_FE"
         self.correction = correction
         self.speed = 0
 
@@ -277,6 +289,9 @@ class IzzifastBridge:
             
     def set_vent_mode(self, mode) -> bool:
         return self.controller.set_vent_mode(mode)
+            
+    def set_vent_preset_mode(self, mode) -> bool:
+        return self.controller.set_vent_preset_mode(mode)
         
     def set_bypass_temp(self, temp) -> bool:
         return self.controller.set_bypass_temp(temp)

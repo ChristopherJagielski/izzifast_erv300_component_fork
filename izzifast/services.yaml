@@ -1,4 +1,3 @@
-  
 # Describes the format for available services
 bypass_mode:
   description: Set bypass mode.
@@ -6,7 +5,7 @@ bypass_mode:
     mode:
       description: Mode
       example: "auto, open, closed"
-      
+
 bypass_temp:
   description: Set bypass comfort temperature in auto mode.
   fields:
@@ -14,12 +13,19 @@ bypass_temp:
       description: Temperature
       example: "23"
 
-vent_mode:
-  description: Set ventilation special mode.
+vent_custom_mode:
+  description: Set ventilation custom mode.
   fields:
     mode:
       description: Mode
       example: "none, fireplace, open windows, cooker hood"
+
+vent_preset_mode:
+  description: Set ventilation preset mode.
+  fields:
+    mode:
+      description: Mode
+      example: "off, Speed-1, Speed-2, Speed-3, Ventilate, Fireplace, Away, Auto"
 
 correction:
   description: Set extract fan correction.
@@ -37,7 +43,7 @@ speed_raw:
     extract:
       description: Set extract fan custom speed.
       example: "40"
-      
+
 cf_params:
   description: Set Constant flow module params.
   fields:

@@ -1,4 +1,4 @@
-"""Platform to control a IZZI ERV 300 ventilation unit."""
+"""Platform to control a IZZI ERV 302 ventilation unit."""
 import logging
 from typing import Optional
 

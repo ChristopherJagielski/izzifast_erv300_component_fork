@@ -19,18 +19,6 @@ from . import *
 
 _LOGGER = logging.getLogger('izzicontroller')
 
-#values = array('B', [0x64, 0x19, 0x00, 0x14, 0x00, 0x16, 0x05, 0x00, 0x17, 0x02, 0x28, 0x28, 0x00, 0x00, 0x00])
-
-
-#socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#socket.connect((TCP_IP, TCP_PORT))
-#socket.setblocking(0)
-
-#class IzziEthbrindge
-#    connect()
-#    disconnect()    
-#    read_message()
-#    write_message()
 class IzziBridge(object):
     def connect(self) -> bool:
         """Open connection to the bridge."""
@@ -53,7 +41,7 @@ class IzziBridge(object):
 class IzziSerialBridge(IzziBridge):
     """Implements an interface to send and receive messages from the Bridge."""
 
-    STATUS_MESSAGE_LENGTH = 15
+    STATUS_MESSAGE_LENGTH = 26
 
     def __init__(self, usbname: str) -> None:
         self.usbname = usbname
@@ -137,7 +125,8 @@ class IzziSerialBridge(IzziBridge):
 class IzziEthBridge(IzziBridge):
     """Implements an interface to send and receive messages from the Bridge."""
 
-    STATUS_MESSAGE_LENGTH = 15
+    CMD_STATUS_MESSAGE_LENGTH = 21
+    MSG_STATUS_MESSAGE_LENGTH = 26
 
     def __init__(self, host: str, port: int) -> None:
         self.host = host
@@ -184,33 +173,41 @@ class IzziEthBridge(IzziBridge):
             raise Exception('Broken pipe')
 
         message = b''
-        remaining = self.STATUS_MESSAGE_LENGTH
+        remaining = self.CMD_STATUS_MESSAGE_LENGTH
         message_valid = False
+        invalid_message = b''
         while remaining > 0:
-            #_LOGGER.debug("Read select")
+            # _LOGGER.debug("Read select")
             ready = select.select([self._socket], [], [], timeout)
             if not ready[0]:
                 message = None
-                #_LOGGER.debug("Select timeout")
+                # _LOGGER.debug("Select timeout")
                 break
             if not message_valid:
-                #_LOGGER.debug("Read recv(1)")
+                # _LOGGER.debug("Read recv(1)")
                 data = self._socket.recv(1)
-                if struct.unpack_from('>B', data, 0)[0] != IZZI_STATUS_MESSAGE_ID and struct.unpack_from('>B', data, 0)[0] != IZZI_COMMAND_MESSAGE_ID:
-                    _LOGGER.debug("Read invalid msg id")
+                is_cmd = struct.unpack_from('>B', data, 0)[0] == IZZI_COMMAND_MESSAGE_ID
+                is_msg = struct.unpack_from('>B', data, 0)[0] == IZZI_STATUS_MESSAGE_ID
+                # _LOGGER.debug("STRUCT UNPACKED: %s", struct.unpack_from('>B', data, 0))
+                if not is_cmd and not is_msg:
+                    # _LOGGER.debug("Read invalid msg id")
+                    # _LOGGER.debug("invalid Data %s", binascii.hexlify(data))
+                    # invalid_message += (data)
                     continue
                 message_valid = True
+                remaining = self.CMD_STATUS_MESSAGE_LENGTH if is_cmd else self.MSG_STATUS_MESSAGE_LENGTH
             else:
-                #_LOGGER.debug("Read recv(%d)", remaining)
+                # _LOGGER.debug("Read recv(%d)", remaining)
                 data = self._socket.recv(remaining)
-                #_LOGGER.debug("Data %s", binascii.hexlify(data))
+                # _LOGGER.debug("Data %s", binascii.hexlify(data))
             remaining -= len(data)
             message += (data)
         
         # Debug message
         
-        #if message != None:
-        #    _LOGGER.debug("RX %s", binascii.hexlify(message))
+        # if message != None:
+            # _LOGGER.debug("RX %s", binascii.hexlify(message))
+        # _LOGGER.debug("INVALID RX %s", binascii.hexlify(invalid_message))
         return message
 
     def write_message(self, message: b'') -> bool:
@@ -270,7 +267,7 @@ class CfController(object):
     def set_current_params(self, supply : float, extract : float):
         self._params_supply.append(supply)
         self._params_extract.append(extract)
-   
+
     def get_supply_speed(self, exp_speed : int) -> int:
         if int(self._supply_speed) != exp_speed :
             self._supply_speed = float(exp_speed)
@@ -385,29 +382,44 @@ class CfController(object):
 class IzziController(object):
 
     
-    """Implements the commands to communicate with the IZZI 300 ERV ventilation unit."""
+    """Implements the commands to communicate with the IZZI 302 ERV ventilation unit."""
                     # Id of sensor,                      Value,    Index in status message array. Unpack type
-    _sensors_data = {IZZY_SENSOR_TEMPERATURE_SUPPLY_ID: [None, IZZI_STATUS_MSG_SUPPLY_AIR_TEMP_INDEX, '>b'],
-                     IZZY_SENSOR_TEMPERATURE_EXTRACT_ID: [None, IZZI_STATUS_MSG_EXTRACT_AIR_TEMP_INDEX, '>b'],
-                     IZZY_SENSOR_TEMPERATURE_EXHAUST_ID: [None, IZZI_STATUS_MSG_EXHAUST_AIR_TEMP_INDEX, '>b'],
-                     IZZY_SENSOR_TEMPERATURE_OUTDOOR_ID: [None, IZZI_STATUS_MSG_OUTDOR_AIR_TEMP_INDEX, '>b'],
-                     IZZY_SENSOR_BYPASS_STATE_ID: [None, IZZI_STATUS_MSG_BYPASS_STATE_INDEX, '>B'],
-                     IZZY_SENSOR_COVER_STATE_ID: [None, IZZI_STATUS_MSG_COVER_STATE_INDEX, '>B'],
-                     IZZY_SENSOR_DEFROST_STATE_ID: [None, IZZI_STATUS_MSG_DEFROST_STATE_INDEX, '>B'],
+    _sensors_data = {
+                        IZZY_SENSOR_TEMPERATURE_SUPPLY_ID: [None, IZZI_STATUS_MSG_SUPPLY_AIR_TEMP_INDEX, '>b'],
+                        IZZY_SENSOR_TEMPERATURE_EXTRACT_ID: [None, IZZI_STATUS_MSG_EXTRACT_AIR_TEMP_INDEX, '>b'],
+                        IZZY_SENSOR_TEMPERATURE_EXHAUST_ID: [None, IZZI_STATUS_MSG_EXHAUST_AIR_TEMP_INDEX, '>b'],
+                        IZZY_SENSOR_TEMPERATURE_OUTDOOR_ID: [None, IZZI_STATUS_MSG_OUTDOR_AIR_TEMP_INDEX, '>b'],
+                        IZZY_SENSOR_BYPASS_STATE_ID: [None, IZZI_STATUS_MSG_BYPASS_STATE_INDEX, '>B'],
+                        IZZI_SENSOR_HIGRO_CO2_STATUS_ID: [None, IZZI_STATUS_MSG_HIGRO_CO2_STATUS_INDEX, '>B'],
+                        IZZY_SENSOR_COVER_STATE_ID: [None, IZZI_STATUS_MSG_COVER_STATE_INDEX, '>B'],
+                        IZZY_SENSOR_DEFROST_STATE_ID: [None, IZZI_STATUS_MSG_DEFROST_STATE_INDEX, '>B'],
+                        IZZY_SENSOR_HUMIDITY_ID: [None, IZZI_STATUS_MSG_HUMIDITY_STATE_INDEX, '>B'],
+                        IZZI_SENSOR_PPM_STATE_ID: [None, IZZI_STATUS_MSG_PPM_STATE_INDEX, '>B'],
+                        IZZI_SENSOR_CF_EXHAUST_SPEED_STATE_ID: [None, IZZI_STATUS_MSG_CF_EXHAUST_SPEED_STATE_INDEX, '>B'],
+                        IZZI_SENSOR_CF_SUPPLY_SPEED_STATE_ID: [None, IZZI_STATUS_MSG_CF_SUPPLY_SPEED_STATE_INDEX, '>B'],
+                        IZZI_SENSOR_HIGRO_CO2_STATUS_ID: [None, IZZI_STATUS_MSG_HIGRO_CO2_STATUS_INDEX, '>B'],
                     }
 
                     # Id of sensor,               Target value,    Index in command array, multiplier
-    _cmd_data = {IZZY_SENSOR_FAN_SUPPLY_SPEED_ID: [0, IZZI_CMD_MSG_SUPPLY_FAN_SPEED_INDEX, None],
-                 IZZY_SENSOR_FAN_EXTRACT_SPEED_ID: [0, IZZI_CMD_MSG_EXTRACT_FAN_SPEED_INDEX, None],
-                 IZZY_SENSOR_UNIT_STATE_ID: [IZZY_CMD_UNIT_STATE_OFF, IZZI_CMD_MSG_UNIT_STATE_INDEX, None],
-                 IZZY_SENSOR_BYPASS_TEMP_ID: [22, IZZI_CMD_MSG_BYPASS_TEMP_INDEX, None],
-                 IZZY_SENSOR_BYPASS_MODE_ID: [IZZY_CMD_BYPASS_MODE_AUTO, IZZI_CMD_MSG_BYPASS_MODE_INDEX, None]}
+    _cmd_data = {
+                    IZZY_SENSOR_FAN_SUPPLY_SPEED_ID: [0, IZZI_CMD_MSG_SUPPLY_FAN_SPEED_INDEX, None],
+                    IZZY_SENSOR_FAN_EXTRACT_SPEED_ID: [0, IZZI_CMD_MSG_EXTRACT_FAN_SPEED_INDEX, None],
+                    IZZY_SENSOR_UNIT_STATE_ID: [IZZY_CMD_UNIT_STATE_OFF, IZZI_CMD_MSG_UNIT_STATE_INDEX, None],
+                    IZZY_SENSOR_BYPASS_TEMP_ID: [22, IZZI_CMD_MSG_BYPASS_TEMP_INDEX, None],
+                    IZZY_SENSOR_BYPASS_MODE_ID: [IZZY_CMD_BYPASS_MODE_AUTO, IZZI_CMD_MSG_BYPASS_MODE_INDEX, None],
+                    IZZI_SENSOR_CURRENT_VENT_MODE_ID: [IZZI_CMD_NEW_VENT_MODE_SPEED_1, IZZI_CMD_MSG_CURRENT_VENT_MODE_INDEX, None],
+                    IZZI_SENSOR_HIGRO_CO2_STATE_ID: [IZZI_STATUS_MSG_HIGRO_CO2_STATE_ON, IZZI_CMD_MSG_HIGRO_CO2_STATE_INDEX, None],
+                    IZZI_SENSOR_SUPPLY_STATE_ID: [IZZY_CMD_SUPPLY_STATE_ON, IZZI_CMD_MSG_SUPPLY_STATE_INDEX, None],
+                    IZZI_SENSOR_EXTRACT_STATE_ID: [IZZY_CMD_EXTRACT_STATE_ON, IZZI_CMD_MSG_EXTRACT_STATE_INDEX, None],
+                }
 
                     # Id of sensor,           Target Value, Current value    
-    _virtual_data = {IZZY_SENSOR_VENT_MODE_ID: [IZZY_SENSOR_VENT_MODE_NONE, None],
-                     IZZY_SENSOR_EFFICIENCY_ID: [0, None],
-                     IZZY_SENSOR_CF_EXTRACT_CORRECTION_ID: [0, 0],
-                     IZZY_SENSOR_CF_SUPPLY_CORRECTION_ID: [0, 0]}
+    _virtual_data = {
+                        IZZY_SENSOR_VENT_MODE_ID: [IZZY_SENSOR_VENT_MODE_NONE, None],
+                        IZZY_SENSOR_EFFICIENCY_ID: [0, None],
+                        IZZY_SENSOR_CF_EXTRACT_CORRECTION_ID: [0, 0],
+                        IZZY_SENSOR_CF_SUPPLY_CORRECTION_ID: [0, 0]
+                    }
 
     """Callback function to invoke when sensor updates are received."""
     callback_sensor = None
@@ -415,7 +427,9 @@ class IzziController(object):
     cf_controller = CfController()
     extract_correction = 0.0
     
-    _command_message = array('B', [IZZI_COMMAND_MESSAGE_ID, 0x19, 0x00, 0x14, 0x00, 0x16, 0x05, 0x00, 0x17, IZZY_CMD_BYPASS_MODE_CLOSED, 0x28, 0x28, IZZY_CMD_UNIT_STATE_OFF, 0x00, 0x00])
+    _command_message = array('B', [IZZI_COMMAND_MESSAGE_ID, 0x00, 0x00, 0x00, 0x00, 0x16, 0x05, 0x00, 0x16, IZZY_CMD_BYPASS_MODE_CLOSED, 0x28, 0x28, IZZY_CMD_UNIT_STATE_OFF, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00])
+    #                                                   64    00    00    00    00    16    05    00    16                           00    37    37                       00    18    01    00    01    01    01    00    00
+
 
     def __init__(self, bridge: IzziBridge, is_master : bool):
 
@@ -517,7 +531,30 @@ class IzziController(object):
         
         self._virtual_data[IZZY_SENSOR_VENT_MODE_ID][0] = mode
         return True
-        
+
+    def set_vent_preset_mode(self, mode : int) -> bool:
+        if mode < IZZI_CMD_NEW_VENT_MODE_OFF or mode > IZZI_CMD_NEW_VENT_MODE_AUTO:
+            return False
+        if mode == IZZI_CMD_NEW_VENT_MODE_OFF:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        elif mode == IZZI_CMD_NEW_VENT_MODE_SPEED_1:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        elif mode == IZZI_CMD_NEW_VENT_MODE_SPEED_2:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode    
+        elif mode == IZZI_CMD_NEW_VENT_MODE_SPEED_3:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        elif mode == IZZI_CMD_NEW_VENT_MODE_VENT_MAX:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        elif mode == IZZI_CMD_NEW_VENT_MODE_FIREPLACE:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        elif mode == IZZI_CMD_NEW_VENT_MODE_AWAY:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        elif mode == IZZI_CMD_NEW_VENT_MODE_AUTO:
+            self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+
+        self._cmd_data[IZZI_SENSOR_CURRENT_VENT_MODE_ID][0] = mode
+        return True
+
     def set_cf_params_max(self, params_max : float) -> bool:
         self.cf_controller.set_params_max(params_max)
         self.cf_controller.set_enabled(True)
@@ -562,7 +599,7 @@ class IzziController(object):
             
             try:
                 
-                #_LOGGER.debug("Reading message")
+                _LOGGER.debug("Reading message")
                 status_message = self._bridge.read_message()
                 if status_message == None:
                     self._bridge.disconnect()
@@ -572,7 +609,7 @@ class IzziController(object):
                 command_id = struct.unpack_from('>B', status_message, IZZI_STATUS_MSG_ID_INDEX)[0]
                 if (command_id == IZZI_STATUS_MESSAGE_ID):
                     stat_msg_counter += 1
-                    #_LOGGER.debug(status_message)
+                    _LOGGER.debug("STATUS MSG RX %s", str(binascii.hexlify(status_message)))
                     
                     timediff = time.time() - last_cmd_timestamp
                     last_cmd_timestamp = time.time()
@@ -582,7 +619,7 @@ class IzziController(object):
                     for sensor_id in self._sensors_data:
                         sensor_data = self._sensors_data[sensor_id];
                         sensor_current = struct.unpack_from(sensor_data[2], status_message, sensor_data[1])[0] 
-                       
+
                         if sensor_data[0] != sensor_current:
                             sensor_data[0] = sensor_current
                             if self.callback_sensor:
@@ -649,18 +686,18 @@ class IzziController(object):
                         sensor_data[1] = sensor_data[0]
                         if self.callback_sensor:
                             self.callback_sensor(sensor_id, sensor_data[0])
-                 
+
                 if stat_msg_counter >= 2:
                     stat_msg_counter = 0
                     if self._master_mode:
-                        #_LOGGER.debug("Writting msg %s", str(self._command_message))
+                        _LOGGER.debug("Writting msg %s", str(self._command_message))
                         time.sleep(0.2)
                         self._bridge.write_message(self._command_message)
 
             except Exception as exc:
                 _LOGGER.error(exc)
                 continue
-          
+
         try:
             self._bridge.disconnect()
         except Exception as exc:

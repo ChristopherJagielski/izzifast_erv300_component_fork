@@ -1,4 +1,4 @@
-"""Support for the for Danfoss Air HRV binary sensors."""
+"""Support for the for IzziFast binary sensors."""
 import logging
 from homeassistant.helpers.dispatcher import *
 from homeassistant.components.binary_sensor import BinarySensorEntity 
@@ -16,7 +16,7 @@ from .izzi import *
 _LOGGER = logging.getLogger(__name__)
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the available Danfoss Air sensors etc."""
+    """Set up the available IzziFast sensors etc."""
     izzibridge = hass.data[DOMAIN]
 
     sensors = [
@@ -34,10 +34,10 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
 
 class IzzifastBinarySensor(BinarySensorEntity):
-    """Representation of a Danfoss Air binary sensor."""
+    """Representation of a IzziFast binary sensor."""
 
     def __init__(self, izzibridge, name, sensor_type, device_class, active_state):
-        """Initialize the Danfoss Air binary sensor."""
+        """Initialize the IzziFast binary sensor."""
         self._izzibridge = izzibridge
         self._name = name
         self._state = None

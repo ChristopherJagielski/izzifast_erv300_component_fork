@@ -1,8 +1,8 @@
 {
   "domain": "izzifast",
-  "name": "iZZi 300 ERV",
+  "name": "iZZi 302 ERV",
   "documentation": "https://www.home-assistant.io/integrations/",
   "requirements": [],
   "codeowners": ["@Jakub"],
-  "version": "0.1.0"
+  "version": "0.2.1"
 }
