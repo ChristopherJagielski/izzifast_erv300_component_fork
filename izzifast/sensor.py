@@ -1,10 +1,14 @@
-"""Platform to control a IZZI ERV 302 ventilation unit."""
+"""Platform to control a Zehnder ComfoAir Q350/450/600 ventilation unit."""
 
 import logging
 from homeassistant.helpers.dispatcher import *
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
-from homeassistant.const import UnitOfTemperature, UnitOfSpeed, CONCENTRATION_PARTS_PER_MILLION
+from homeassistant.const import (
+    UnitOfTemperature,
+    UnitOfSpeed,
+    CONCENTRATION_PARTS_PER_MILLION,
+)
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 
@@ -19,9 +23,19 @@ auto_cf_mapping = ["off", "on"]
 supply_mapping = ["off", "on"]
 extract_mapping = ["off", "on"]
 vent_mode_mapping = ["none", "fireplace", "open windows"]
-vent_mode_mapping_2 = ["off", "Speed-1", "Speed-2", "Speed-3", "Ventilate", "Fireplace", "Away", "Auto"]
+vent_mode_mapping_2 = [
+    "off",
+    "Speed-1",
+    "Speed-2",
+    "Speed-3",
+    "Ventilate",
+    "Fireplace",
+    "Away",
+    "Auto",
+]
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the ComfoConnect fan platform."""
@@ -34,7 +48,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             IZZY_SENSOR_TEMPERATURE_EXHAUST_ID,
             SensorDeviceClass.TEMPERATURE,
             None,
-            None
+            None,
         ],
         [
             "iZZi Outdoor Temperature",
@@ -42,7 +56,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             IZZY_SENSOR_TEMPERATURE_OUTDOOR_ID,
             SensorDeviceClass.TEMPERATURE,
             None,
-            None
+            None,
         ],
         [
             "iZZi Supply Temperature",
@@ -50,7 +64,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             IZZY_SENSOR_TEMPERATURE_SUPPLY_ID,
             SensorDeviceClass.TEMPERATURE,
             None,
-            None
+            None,
         ],
         [
             "iZZi Extract Temperature",
@@ -58,30 +72,108 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             IZZY_SENSOR_TEMPERATURE_EXTRACT_ID,
             SensorDeviceClass.TEMPERATURE,
             None,
-            None
+            None,
         ],
-        ["iZZi Supply Fan Speed", "%", IZZY_SENSOR_FAN_SUPPLY_SPEED_ID, None, "mdi:fan", None],
-        ["iZZi Extract Fan Speed", "%", IZZY_SENSOR_FAN_EXTRACT_SPEED_ID, None, "mdi:fan", None],
-        ["iZZi Bypass mode", "", IZZY_SENSOR_BYPASS_MODE_ID, None, None, bypass_mapping],
-        ["iZZi Bypass temp", UnitOfTemperature.CELSIUS, IZZY_SENSOR_BYPASS_TEMP_ID, None, "mdi:home-temperature", None],
+        [
+            "iZZi Supply Fan Speed",
+            "%",
+            IZZY_SENSOR_FAN_SUPPLY_SPEED_ID,
+            None,
+            "mdi:fan",
+            None,
+        ],
+        [
+            "iZZi Extract Fan Speed",
+            "%",
+            IZZY_SENSOR_FAN_EXTRACT_SPEED_ID,
+            None,
+            "mdi:fan",
+            None,
+        ],
+        [
+            "iZZi Bypass mode",
+            "",
+            IZZY_SENSOR_BYPASS_MODE_ID,
+            None,
+            None,
+            bypass_mapping,
+        ],
+        [
+            "iZZi Bypass temp",
+            UnitOfTemperature.CELSIUS,
+            IZZY_SENSOR_BYPASS_TEMP_ID,
+            None,
+            "mdi:home-temperature",
+            None,
+        ],
         ["iZZi Vent mode", "", IZZY_SENSOR_VENT_MODE_ID, None, None, vent_mode_mapping],
         ["iZZi Efficiency", "%", IZZY_SENSOR_EFFICIENCY_ID, None, None, None],
-        ["iZZi Extract correction", "%", IZZY_SENSOR_EXTRACT_CORRECTION_STATE_ID, None, None, None],
-        ["iZZi CF extract correction", "%", IZZY_SENSOR_CF_EXTRACT_CORRECTION_ID, None, None, None],
-        ["iZZi CF supply correction", "%", IZZY_SENSOR_CF_SUPPLY_CORRECTION_ID, None, None, None],
+        [
+            "iZZi Extract correction",
+            "%",
+            IZZY_SENSOR_EXTRACT_CORRECTION_STATE_ID,
+            None,
+            None,
+            None,
+        ],
+        [
+            "iZZi CF extract correction",
+            "%",
+            IZZY_SENSOR_CF_EXTRACT_CORRECTION_ID,
+            None,
+            None,
+            None,
+        ],
+        [
+            "iZZi CF supply correction",
+            "%",
+            IZZY_SENSOR_CF_SUPPLY_CORRECTION_ID,
+            None,
+            None,
+            None,
+        ],
         ["Izzi Humidity", "%", IZZY_SENSOR_HUMIDITY_ID, None, "mdiWaterPercent", None],
         ["Izzi PPM", "ppm", IZZI_SENSOR_PPM_STATE_ID, None, None, None],
-        ["Izzi Current Supply Speed", "m/s", IZZI_SENSOR_CF_SUPPLY_SPEED_STATE_ID, None, None, None],
-        ["Izzi Current Extract Speed", "m/s", IZZI_SENSOR_CF_EXHAUST_SPEED_STATE_ID, None, None, None],
-        ["Izzi Current Fan Mode Setting", "", IZZI_SENSOR_CURRENT_VENT_MODE_ID ,None, None, vent_mode_mapping_2]
+        [
+            "Izzi Current Supply Speed",
+            "m/s",
+            IZZI_SENSOR_CF_SUPPLY_SPEED_STATE_ID,
+            None,
+            None,
+            None,
+        ],
+        [
+            "Izzi Current Extract Speed",
+            "m/s",
+            IZZI_SENSOR_CF_EXHAUST_SPEED_STATE_ID,
+            None,
+            None,
+            None,
+        ],
+        [
+            "Izzi Current Fan Mode Setting",
+            "",
+            IZZI_SENSOR_CURRENT_VENT_MODE_ID,
+            None,
+            None,
+            vent_mode_mapping_2,
+        ],
     ]
 
-
-        
     dev = []
 
     for sensor in sensors:
-        dev.append(IzzifastSensor(sensor[0], izzibridge, sensor[1], sensor[2], sensor[3], sensor[4], sensor[5]))
+        dev.append(
+            IzzifastSensor(
+                sensor[0],
+                izzibridge,
+                sensor[1],
+                sensor[2],
+                sensor[3],
+                sensor[4],
+                sensor[5],
+            )
+        )
 
     add_entities(dev, True)
 
@@ -89,7 +181,16 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 class IzzifastSensor(SensorEntity):
     """Representation of a IZZI sensor."""
 
-    def __init__(self, name, izzibridge: IzzifastBridge, sensor_unit, sensor_type, device_class, icon, mapping_list) -> None:
+    def __init__(
+        self,
+        name,
+        izzibridge: IzzifastBridge,
+        sensor_unit,
+        sensor_type,
+        device_class,
+        icon,
+        mapping_list,
+    ) -> None:
         """Initialize the ComfoConnect sensor."""
         self._izzibridge = izzibridge
         self._sensor_type = sensor_type
@@ -102,20 +203,18 @@ class IzzifastSensor(SensorEntity):
 
     async def async_added_to_hass(self):
         """Register for sensor updates."""
-        _LOGGER.debug(
-            "Registering for sensor %s", self._sensor_type
-        )
+        _LOGGER.debug("Registering for sensor %s", self._sensor_type)
         self._remove_signal_update = async_dispatcher_connect(
             self.hass,
             SIGNAL_IZZIFAST_UPDATE_RECEIVED.format(self._sensor_type),
             self._handle_update,
         )
         self._izzibridge.force_update(self._sensor_type)
-        
+
     async def async_will_remove_from_hass(self) -> None:
         """Call when entity will be removed from hass."""
         self._remove_signal_update()
-        
+
     def _handle_update(self, value):
         """Handle update callbacks."""
         _LOGGER.debug(
@@ -123,11 +222,13 @@ class IzzifastSensor(SensorEntity):
             self._name,
             value,
         )
+        if self._sensor_type in [IZZI_SENSOR_PPM_STATE_ID, IZZI_SENSOR_CF_EXHAUST_SPEED_STATE_ID, IZZI_SENSOR_CF_SUPPLY_SPEED_STATE_ID]:
+            value = value * 10
         if self._mapping != None:
             self._izzibridge.data[self._sensor_type] = self._mapping[value]
         else:
             self._izzibridge.data[self._sensor_type] = value
-        
+
         self.schedule_update_ha_state()
 
     @property
@@ -152,8 +253,8 @@ class IzzifastSensor(SensorEntity):
     def name(self):
         """Return the name of the sensor."""
         return self._name
+
     @property
-    
     def icon(self):
         """Return the icon to use in the frontend."""
         return self._icon
